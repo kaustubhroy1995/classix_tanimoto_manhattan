@@ -18,9 +18,9 @@ The following files are used for the following experiments:
 6. CLASSIX_M experiments with Banknote dataset - classix_m_banknote.ipynb
 7. CLASSIX_M experiments with MNIST dataset - classix_m_mnist.ipynb
 
-# Hyperparameter choices
+<!# Hyperparameter choices
 The hyperparameter ranges for  CLASSIX\_M were $\texttt{radius} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minPts} \in (0, 50)$ in steps of $5$ for IRIS; $\texttt{radius} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minPts} \in (0, 50)$ in steps of $5$ for Banknote; and $\texttt{radius} \in (0.01, 0.1)$ in steps of $0.005$, $\texttt{minPts} \in (0, 50)$ in steps of $5$ for the MNIST dataset. 
 
 For DBSCAN $\texttt{eps} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minsamples} \in (0, 50)$ in steps of $5$ for IRIS; $\texttt{eps} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minsamples} \in (0, 50)$ in steps of $5$ for Banknote; and $\texttt{eps} \in (0.1, 1)$ in steps of $0.025$, $\texttt{minsamples} \in (0, 50)$ in steps of $5$ for the MNIST dataset. 
 
-For OPTICS $\texttt{maxeps} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minsamples} \in (0, 50)$ in steps of $5$ for IRIS; $\texttt{maxeps} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minPts} \in (0, 50)$ in steps of $5$ for Banknote; and $\texttt{maxeps} \in (0.1, 3)$ in steps of $0.025$, $\texttt{minsamples} \in (0, 50)$ in steps of $5$ for the MNIST dataset.
+For OPTICS $\texttt{maxeps} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minsamples} \in (0, 50)$ in steps of $5$ for IRIS; $\texttt{maxeps} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minPts} \in (0, 50)$ in steps of $5$ for Banknote; and $\texttt{maxeps} \in (0.1, 3)$ in steps of $0.025$, $\texttt{minsamples} \in (0, 50)$ in steps of $5$ for the MNIST dataset.>

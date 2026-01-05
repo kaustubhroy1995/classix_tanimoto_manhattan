@@ -12,4 +12,15 @@ Our code for experiments can be found in the experiments section.
 The following files are used for the following experiments:
 1. Synthetic data generation - classix_t_blobs.ipynb
 2. Experiments with synthetic data for CLASSIX_T - classix_t_blobs.ipynb
-3. Experiments with chemdb dataset with CLASSIX_T - classix_t_main.ipynb
+3. CLASSIX_T probabilistic analysis simulations - classix_t_prob.ipynb
+4. Timing with chemdb dataset for taylor-butina, DBSCAN and CLASSIX_T - classix_t_main.ipynb
+5. CLASSIX_M experiments with Iris dataset - classix_m_iris.ipynb
+6. CLASSIX_M experiments with Banknote dataset - classix_m_banknote.ipynb
+7. CLASSIX_M experiments with MNIST dataset - classix_m_mnist.ipynb
+
+# Hyperparameter choices
+The hyperparameter ranges for  CLASSIX\_M were $\texttt{radius} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minPts} \in (0, 50)$ in steps of $5$ for IRIS; $\texttt{radius} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minPts} \in (0, 50)$ in steps of $5$ for Banknote; and $\texttt{radius} \in (0.01, 0.1)$ in steps of $0.005$, $\texttt{minPts} \in (0, 50)$ in steps of $5$ for the MNIST dataset. 
+
+For DBSCAN $\texttt{eps} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{min\_samples} \in (0, 50)$ in steps of $5$ for IRIS; $\texttt{eps} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{min\_samples} \in (0, 50)$ in steps of $5$ for Banknote; and $\texttt{eps} \in (0.1, 1)$ in steps of $0.025$, $\texttt{min\_samples} \in (0, 50)$ in steps of $5$ for the MNIST dataset. 
+
+For OPTICS $\texttt{max\_eps} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{min\_samples} \in (0, 50)$ in steps of $5$ for IRIS; $\texttt{max\_eps} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minPts} \in (0, 50)$ in steps of $5$ for Banknote; and $\texttt{max\_eps} \in (0.1, 3)$ in steps of $0.025$, $\texttt{min\_samples} \in (0, 50)$ in steps of $5$ for the MNIST dataset.

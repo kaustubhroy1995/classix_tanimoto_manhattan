@@ -1,22 +1,90 @@
 # CLASSIX Tanimoto and Manhattan
-Code in support of the article "Fast and explainable clustering in the Manhattan and Tanimoto distance"
 
-# Installation
-CLASSIX Tanimoto and Manhattan can be installed by cloning this repository and following creating an object of the CLASSIX_T or CLASSIX_M classes.
+Code in support of the article "Fast and explainable clustering in the Manhattan and Tanimoto distance".
 
-Optional: Perfomance metrics in CLASSIX Tanimoto require our custom sparse matrix - vector product subroutine, which needs to be installed using the appropriate wheel file for Windows, Mac and Linux. This can be done by using the command - pip install <wheel_file_name>. The extracted package will not contain the source code; only a pre-compiled shared library is provided. This does not require C/C++ compilers to be installed to run.
+## Run In A Fresh Environment
 
-# Experiments
-Our code for experiments can be found in the experiments section.
+The project is designed to run directly from source in `src/`.
 
-The following files are used for the following experiments:
-1. Synthetic data generation - classix_t_blobs.ipynb
-2. Experiments with synthetic data for CLASSIX_T - classix_t_blobs.ipynb
-3. CLASSIX_T probabilistic analysis simulations - classix_t_prob.ipynb
-4. Timing with chemdb dataset for taylor-butina, DBSCAN and CLASSIX_T - classix_t_main.ipynb
-5. CLASSIX_M experiments with Iris dataset - classix_m_iris.ipynb
-6. CLASSIX_M experiments with Banknote dataset - classix_m_banknote.ipynb
-7. CLASSIX_M experiments with MNIST dataset - classix_m_mnist.ipynb
+### 1. Clone and enter the repository
+
+```bash
+git clone https://github.com/kaustubhroy1995/classix_tanimoto_manhattan.git
+cd classix_tanimoto_manhattan
+```
+
+### 2. Create and activate a virtual environment
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+```
+
+### 3. Install Python dependencies
+
+```bash
+python -m pip install -r requirement.txt
+```
+
+### 4. Build the local `spmv` shared library (required for `CLASSIX_T`)
+
+`CLASSIX_T` uses a local C shared object loaded from `src/spmv/lib/spsubmatxvec.so`.
+
+```bash
+cd src/spmv
+make
+mkdir -p lib
+cp spsubmatxvec.so lib/spsubmatxvec.so
+cd ../..
+```
+
+If your system does not have `clang`, edit `src/spmv/Makefile` and replace `clang` with `gcc`.
+
+### 5. Quick smoke test from source
+
+#### CLASSIX_M (Manhattan)
+
+```bash
+python - <<'PY'
+import sys
+sys.path.insert(0, 'src')
+import numpy as np
+from classix_m import CLASSIX_M
+
+x = np.array([[0.,1.],[1.,0.],[0.8,0.2],[0.2,0.8]])
+model = CLASSIX_M(radius=0.5, minPts=1)
+model.fit(x)
+print('CLASSIX_M OK:', len(model.labels))
+PY
+```
+
+#### CLASSIX_T (Tanimoto)
+
+```bash
+python - <<'PY'
+import sys
+sys.path.insert(0, 'src')
+import numpy as np
+from classix_t import CLASSIX_T
+
+x = np.array([[1,0,1],[1,1,0],[0,1,1],[1,0,0]], dtype=np.int32)
+model = CLASSIX_T(radius=0.3, minPts=1)
+model.fit(x)
+print('CLASSIX_T OK:', len(model.labels))
+PY
+```
+
+## Experiments
+
+The experiment notebooks are in `experiments/`:
+
+1. Synthetic data generation and CLASSIX_T experiments: `classix_t_blobs.ipynb`
+2. CLASSIX_T probabilistic analysis simulations: `classix_t_prob.ipynb`
+3. Timing with chemdb dataset for Taylor-Butina, DBSCAN and CLASSIX_T: `classix_t_main.ipynb`
+4. CLASSIX_M experiments with Iris: `classix_m_expt_iris.ipynb`
+5. CLASSIX_M experiments with Banknote: `classix_m_expt_banknote.ipynb`
+6. CLASSIX_M experiments with MNIST: `classix_m_expt_mnist.ipynb`
 
 <!# Hyperparameter choices
 The hyperparameter ranges for  CLASSIX\_M were $\texttt{radius} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minPts} \in (0, 50)$ in steps of $5$ for IRIS; $\texttt{radius} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minPts} \in (0, 50)$ in steps of $5$ for Banknote; and $\texttt{radius} \in (0.01, 0.1)$ in steps of $0.005$, $\texttt{minPts} \in (0, 50)$ in steps of $5$ for the MNIST dataset. 

@@ -1,5 +1,4 @@
 #%%
-from classix import CLASSIX
 import numpy as np
 from time import time
 from tqdm import tqdm

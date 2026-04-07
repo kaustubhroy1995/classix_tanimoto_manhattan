@@ -1,0 +1,12 @@
+numpy
+scipy
+tqdm
+setuptools<81
+scikit-learn
+matplotlib
+datasets
+ucimlrepo
+opencv-python-headless
+pillow
+umap-learn
+rdkit

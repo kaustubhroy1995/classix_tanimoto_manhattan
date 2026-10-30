@@ -1,0 +1,3 @@
+# Preserve the verified source-data bytes in fresh Windows checkouts.
+/data/BL_Sets_data_rdkitblog.csv text eol=lf
+*.ipynb text eol=lf

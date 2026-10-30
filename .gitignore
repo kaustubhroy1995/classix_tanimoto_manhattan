@@ -54,3 +54,21 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# Local Python/notebook environments and generated experiment work
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+**/_generated/
+**/_experiment_1_work/
+
+# Native builds are regenerated from source
+_build/
+*.dll
+*.pyd
+*.so
+*.whl
+
+# Required pre-run preview used by the molecular notebook
+!experiments/experiment_1/plots/landrum/landrum_comparison_table.png

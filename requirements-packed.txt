@@ -1,0 +1,4 @@
+# Runtime versions used for the packed Tanimoto implementation.
+numpy==2.5.3
+scipy==1.18.1
+tqdm==4.70.1

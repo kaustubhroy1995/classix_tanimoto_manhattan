@@ -7,10 +7,9 @@ if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
     throw 'The recorded native kernels currently require Windows x64 and MSVC.'
 }
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$sourceDirectory = Join-Path $repositoryRoot 'src\packed_tanimoto'
-$packedSource = Join-Path $sourceDirectory 'packed_kernel.c'
-$originalSource = Join-Path $sourceDirectory 'spsubmatxvec.c'
-foreach ($source in @($packedSource, $originalSource)) {
+$sourceDirectory = Join-Path $repositoryRoot 'src\spmv'
+$packedSource = Join-Path $sourceDirectory 'spsubmatxvec.c'
+foreach ($source in @($packedSource)) {
     if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
         throw "Required C source is missing: $source"
     }
@@ -60,34 +59,28 @@ $buildPath = [IO.Path]::GetFullPath($BuildDirectory)
 if ($buildPath.TrimEnd('\') -eq $sourceDirectory.TrimEnd('\')) {
     throw 'Choose a separate build directory; generated intermediate files must not replace sources.'
 }
-foreach ($name in @('packed_kernel.dll', 'packed_kernel.obj', 'packed_kernel.exp', 'packed_kernel.lib',
-                    'original_spmv.dll', 'original_spmv.obj', 'original_spmv.exp', 'original_spmv.lib',
-                    'packed_build.log', 'original_build.log', 'build_metadata.json')) {
+foreach ($name in @('spsubmatxvec.dll', 'spsubmatxvec.obj', 'spsubmatxvec.exp', 'spsubmatxvec.lib',
+                    'build.log', 'build_metadata.json')) {
     if (Test-Path -LiteralPath (Join-Path $buildPath $name)) {
         throw "Build output already exists; choose a fresh directory: $buildPath"
     }
 }
 $null = New-Item -ItemType Directory -Path $buildPath -Force
 $sourceHashes = @{
-    packed_kernel = (Get-FileHash -LiteralPath $packedSource -Algorithm SHA256).Hash.ToLowerInvariant()
-    original_spmv = (Get-FileHash -LiteralPath $originalSource -Algorithm SHA256).Hash.ToLowerInvariant()
+    spsubmatxvec = (Get-FileHash -LiteralPath $packedSource -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 $commonFlags = @('/nologo', '/O2', '/Oi', '/MT', '/LD', '/W4', '/TC')
-$packedArguments = $commonFlags + @($packedSource, '/Fopacked_kernel.obj', '/Fepacked_kernel.dll', '/link', '/INCREMENTAL:NO')
-$originalArguments = $commonFlags + @($originalSource, '/Fooriginal_spmv.obj', '/Feoriginal_spmv.dll', '/link', '/EXPORT:multiply', '/INCREMENTAL:NO')
+$packedArguments = $commonFlags + @($packedSource, '/Fospsubmatxvec.obj', '/Fespsubmatxvec.dll', '/link', '/INCREMENTAL:NO')
 Push-Location -LiteralPath $buildPath
 try {
-    & $compiler @packedArguments 2>&1 | Tee-Object -FilePath 'packed_build.log'
-    if ($LASTEXITCODE -ne 0) { throw 'Packed kernel compilation failed; inspect packed_build.log.' }
-    & $compiler @originalArguments 2>&1 | Tee-Object -FilePath 'original_build.log'
-    if ($LASTEXITCODE -ne 0) { throw 'Original sparse kernel compilation failed; inspect original_build.log.' }
-    foreach ($entry in @(@{ Name = 'packed_kernel'; Source = $packedSource },
-                          @{ Name = 'original_spmv'; Source = $originalSource })) {
+    & $compiler @packedArguments 2>&1 | Tee-Object -FilePath 'build.log'
+    if ($LASTEXITCODE -ne 0) { throw 'Tanimoto kernel compilation failed; inspect build.log.' }
+    foreach ($entry in @(@{ Name = 'spsubmatxvec'; Source = $packedSource })) {
         $after = (Get-FileHash -LiteralPath $entry.Source -Algorithm SHA256).Hash.ToLowerInvariant()
         if ($after -ne $sourceHashes[$entry.Name]) { throw "C source changed during compilation: $($entry.Source)" }
     }
     $installed = @()
-    foreach ($name in @('packed_kernel.dll', 'original_spmv.dll')) {
+    foreach ($name in @('spsubmatxvec.dll')) {
         $destination = Join-Path $sourceDirectory $name
         Copy-Item -LiteralPath (Join-Path $buildPath $name) -Destination $destination -Force
         $installed += $destination
@@ -101,15 +94,12 @@ try {
         architecture = 'x64'
         common_flags = $commonFlags
         packed_arguments = $packedArguments
-        original_arguments = $originalArguments
-        packed_source_sha256 = $sourceHashes.packed_kernel
-        original_source_sha256 = $sourceHashes.original_spmv
-        packed_dll_sha256 = (Get-FileHash -LiteralPath 'packed_kernel.dll' -Algorithm SHA256).Hash.ToLowerInvariant()
-        original_dll_sha256 = (Get-FileHash -LiteralPath 'original_spmv.dll' -Algorithm SHA256).Hash.ToLowerInvariant()
+        source_sha256 = $sourceHashes.spsubmatxvec
+        dll_sha256 = (Get-FileHash -LiteralPath 'spsubmatxvec.dll' -Algorithm SHA256).Hash.ToLowerInvariant()
         installed_files = $installed
         note = 'Built from the published C sources; historical benchmark binaries are not inputs.'
     } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath 'build_metadata.json' -Encoding UTF8
-    Write-Output "Built and installed both x64 DLLs. Build record: $(Join-Path $buildPath 'build_metadata.json')"
+    Write-Output "Built and installed the x64 Tanimoto library. Build record: $(Join-Path $buildPath 'build_metadata.json')"
 } finally {
     Pop-Location
 }

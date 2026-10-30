@@ -1,8 +1,7 @@
-# Source implementations
+# Source
 
-- `packed_tanimoto/`: the packed binary Tanimoto implementation used by the revised benchmarks, its compact adjacency representation and C kernels. Build it using `scripts/build_native.ps1` from the repository; see `packed_tanimoto/README.md` and the root README for its API.
-- `classix_m.py`: the measured Manhattan implementation, with the NumPy stacking compatibility change.
-- `classix_t.py` and `spmv/`: the earlier unpacked Tanimoto implementation and Unix-oriented CSR kernel. These are retained separately for historical compatibility.
-- `setup.py`: the original spmv packaging file; it does not install the new packed implementation.
+- `classix_t.py`: `CLASSIX_T`, using packed binary rows and native Tanimoto operations.
+- `spmv/`: packed C operations, ctypes interface and compact merging adjacency.
+- `classix_m.py`: `CLASSIX_M`, for real-valued Manhattan clustering.
 
-The curated reproduction notebooks freeze their benchmark source snapshots and pinned dependencies. They generate and compile their isolated run helpers rather than depending on locally modified algorithm code.
+Build the Tanimoto library with `scripts/build_native.ps1` from the repository root. Import algorithms with `src` on the Python path.

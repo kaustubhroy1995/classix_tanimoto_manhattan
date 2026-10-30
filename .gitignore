@@ -70,5 +70,5 @@ _build/
 *.so
 *.whl
 
-# Required pre-run preview used by the molecular notebook
+# Reported molecular comparison plot
 !experiments/experiment_1/plots/landrum/landrum_comparison_table.png

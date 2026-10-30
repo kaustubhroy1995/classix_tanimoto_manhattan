@@ -1,3 +1,10 @@
 # Preserve the verified source-data bytes in fresh Windows checkouts.
 /data/BL_Sets_data_rdkitblog.csv text eol=lf
 *.ipynb text eol=lf
+*.py text eol=lf
+*.c text eol=lf
+*.ps1 text eol=lf
+*.txt text eol=lf
+*.md text eol=lf
+# Preserve the upstream BitBIRCH source formatting.
+experiments/experiment_1/helpers/vendor/bitbirch/bitbirch/*.py whitespace=-blank-at-eol,-blank-at-eof

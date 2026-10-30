@@ -7,4 +7,4 @@
 *.txt text eol=lf
 *.md text eol=lf
 # Preserve the upstream BitBIRCH source formatting.
-experiments/experiment_1/helpers/vendor/bitbirch/bitbirch/*.py whitespace=-blank-at-eol,-blank-at-eof
+vendor/bitbirch/bitbirch/*.py whitespace=-blank-at-eol,-blank-at-eof

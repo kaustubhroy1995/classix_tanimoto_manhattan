@@ -57,6 +57,7 @@ dkms.conf
 
 # Local Python/notebook environments and generated experiment work
 .venv/
+.venv-numeric/
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/

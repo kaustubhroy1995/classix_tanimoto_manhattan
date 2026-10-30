@@ -1,94 +1,54 @@
-# CLASSIX Tanimoto and Manhattan
+# CLASSIX in the Manhattan and Tanimoto distances
 
-Code in support of the article "Fast and explainable clustering in the Manhattan and Tanimoto distance".
+Code for *Fast and explainable clustering in the Manhattan and Tanimoto distance*.
 
-## Run In A Fresh Environment
+## Setup
 
-The project is designed to run directly from source in `src/`.
+Windows x64, Python 3.12, Visual Studio C++ Build Tools and a Windows SDK:
 
-### 1. Clone and enter the repository
-
-```bash
-git clone https://github.com/kaustubhroy1995/classix_tanimoto_manhattan.git
-cd classix_tanimoto_manhattan
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build_native.ps1
+.\.venv\Scripts\python.exe -m jupyter lab
 ```
 
-### 2. Create and activate a virtual environment
+Open the binary experiment notebooks using this environment. Each notebook contains its data preparation, clustering calls, scoring and plotting code. Run its cells from top to bottom. It writes results under `_generated/` and figures under `plots/`.
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
+| Notebook | Experiment |
+| --- | --- |
+| [Synthetic benchmarks](experiments/experiment_1/01_synthetic_benchmarks.ipynb) | Sample count, popcount, cluster count, dimension and radius scaling |
+| [Greg Landrum](experiments/experiment_1/02_molecular_benchmarks.ipynb) | Five-method chemical fingerprint comparison |
+| [Radius sensitivity](experiments/experiment_1/03_radius_sensitivity.ipynb) | Synthetic ARI and AMI curves |
+| [Euclidean/Manhattan](experiments/experiment_2/01_euclidean_manhattan_comparison.ipynb) | Twenty original-feature datasets |
+| [Search-bound probabilities](experiments/classix_t_prob.ipynb) | Probability calculations and simulations |
+
+The numeric comparison uses the versions from its original runs. Open it in a separate environment:
+
+```powershell
+py -3.12 -m venv .venv-numeric
+.\.venv-numeric\Scripts\python.exe -m pip install -r experiments/experiment_2/requirements.txt
+.\.venv-numeric\Scripts\python.exe -m jupyter lab
 ```
 
-### 3. Install Python dependencies
+Full benchmark runs, particularly DBSCAN and Taylor-Butina, can be lengthy. The notebooks time the same fitting operations as the recorded experiments, now directly in the notebook process. Fresh timings will vary. Supplied figures retain the reported measurements.
 
-```bash
-python -m pip install -r requirement.txt
-```
+## Algorithms
 
-### 4. Build the local `spmv` shared library (required for `CLASSIX_T`)
-
-`CLASSIX_T` uses a local C shared object loaded from `src/spmv/lib/spsubmatxvec.so`.
-
-```bash
-cd src/spmv
-make
-mkdir -p lib
-cp spsubmatxvec.so lib/spsubmatxvec.so
-cd ../..
-```
-
-If your system does not have `clang`, edit `src/spmv/Makefile` and replace `clang` with `gcc`.
-
-### 5. Quick smoke test from source
-
-#### CLASSIX_M (Manhattan)
-
-```bash
-python - <<'PY'
+```python
 import sys
-sys.path.insert(0, 'src')
-import numpy as np
-from classix_m import CLASSIX_M
-
-x = np.array([[0.,1.],[1.,0.],[0.8,0.2],[0.2,0.8]])
-model = CLASSIX_M(radius=0.5, minPts=1)
-model.fit(x)
-print('CLASSIX_M OK:', len(model.labels))
-PY
-```
-
-#### CLASSIX_T (Tanimoto)
-
-```bash
-python - <<'PY'
-import sys
-sys.path.insert(0, 'src')
+sys.path.insert(0, "src")
 import numpy as np
 from classix_t import CLASSIX_T
 
-x = np.array([[1,0,1],[1,1,0],[0,1,1],[1,0,0]], dtype=np.int32)
-model = CLASSIX_T(radius=0.3, minPts=1)
-model.fit(x)
-print('CLASSIX_T OK:', len(model.labels))
-PY
+binary_rows = np.array([[1, 1, 0, 0], [1, 1, 0, 0],
+                        [0, 0, 1, 1], [0, 0, 1, 1]], dtype=np.uint8)
+packed = np.packbits(binary_rows, axis=1, bitorder="little")
+model = CLASSIX_T(radius=0.3, minPts=1, mergeScale=1.4)
+model.fit(packed)
+labels = model.labels
 ```
 
-## Experiments
+`src/classix_t.py` is the packed Tanimoto implementation. Its C operations and compact adjacency are in `src/spmv/`. Input must be contiguous packed `uint8` rows with zero padding bits. `src/classix_m.py` supplies Manhattan CLASSIX. Euclidean CLASSIX comes from the compiled `classixclustering` package.
 
-The experiment notebooks are in `experiments/`:
-
-1. Synthetic data generation and CLASSIX_T experiments: `classix_t_blobs.ipynb`
-2. CLASSIX_T probabilistic analysis simulations: `classix_t_prob.ipynb`
-3. Timing with chemdb dataset for Taylor-Butina, DBSCAN and CLASSIX_T: `classix_t_main.ipynb`
-4. CLASSIX_M experiments with Iris: `classix_m_expt_iris.ipynb`
-5. CLASSIX_M experiments with Banknote: `classix_m_expt_banknote.ipynb`
-6. CLASSIX_M experiments with MNIST: `classix_m_expt_mnist.ipynb`
-
-<!# Hyperparameter choices
-The hyperparameter ranges for  CLASSIX\_M were $\texttt{radius} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minPts} \in (0, 50)$ in steps of $5$ for IRIS; $\texttt{radius} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minPts} \in (0, 50)$ in steps of $5$ for Banknote; and $\texttt{radius} \in (0.01, 0.1)$ in steps of $0.005$, $\texttt{minPts} \in (0, 50)$ in steps of $5$ for the MNIST dataset. 
-
-For DBSCAN $\texttt{eps} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minsamples} \in (0, 50)$ in steps of $5$ for IRIS; $\texttt{eps} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minsamples} \in (0, 50)$ in steps of $5$ for Banknote; and $\texttt{eps} \in (0.1, 1)$ in steps of $0.025$, $\texttt{minsamples} \in (0, 50)$ in steps of $5$ for the MNIST dataset. 
-
-For OPTICS $\texttt{maxeps} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minsamples} \in (0, 50)$ in steps of $5$ for IRIS; $\texttt{maxeps} \in (0.1, 0.5)$ in steps of $0.025$, $\texttt{minPts} \in (0, 50)$ in steps of $5$ for Banknote; and $\texttt{maxeps} \in (0.1, 3)$ in steps of $0.025$, $\texttt{minsamples} \in (0, 50)$ in steps of $5$ for the MNIST dataset.>
+The comparison notebooks import the pinned third-party BitBIRCH library from `vendor/bitbirch/`. It retains its upstream license. Project code uses the [MIT license](LICENSE).

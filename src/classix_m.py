@@ -43,7 +43,7 @@ class CLASSIX_M:
 
         n, fdim = data.shape
         # Preprocessing and Normalization
-        M = np.row_stack([np.min(data, axis=0)]*n)
+        M = np.vstack([np.min(data, axis=0)]*n)
         data = data - M
         sort_vals = np.sum(data, axis=1)
         mext = np.median(sort_vals)

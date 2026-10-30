@@ -1,3 +1,5 @@
+"""CLASSIX clustering of packed binary fingerprints in Tanimoto distance."""
+from spmv.packed_adjacency import PackedAdjacency
 #%%
 import numpy as np
 from time import time
@@ -7,7 +9,7 @@ from collections import deque
 import scipy.sparse as sparse
 from scipy import sparse
 from fractions import Fraction
-from spmv import spsubmatxvec
+from spmv import packed_submatxvec, row_popcounts
 
 class CLASSIX_T:
     def __init__(self, sorting="popcount", radius=0.3, minPts=1, group_merging="tanimoto_distance", norm=True, mergeScale=1.4, post_alloc=True, mergeTinyGroups=True, verbose=1, short_log_form=True, use_spmv=True):
@@ -25,32 +27,40 @@ class CLASSIX_T:
         self.truncate = short_log_form
 
 
-    
+
     def __str__(self):
         return f"CLASSIX_T(sorting={self.sorting}, radius={self.radius}, minPts={self.minPts}, group_merging={self.group_merging}, mergeScale={self.mergeScale}, mergeTinyGroups={self.mergeTinyGroups})"
-    
+
     def __repr__(self):
         return f"CLASSIX_T(sorting={self.sorting}, radius={self.radius}, minPts={self.minPts}, group_merging={self.group_merging}, mergeScale={self.mergeScale}, mergeTinyGroups={self.mergeTinyGroups})"
-    
+
     def fit(self, data, r=None, mergeScale=None, minPts=None):
         total_time = time()
         if r is not None:
             self.radius = r
-        
+
         if mergeScale is not None:
             self.mergeScale = mergeScale
 
         if minPts is not None:
             self.minPts = minPts
 
+        # Input is np.packbits(binary_rows, axis=1, bitorder='little').
+        # Any padding bits in the final byte must be zero.
+        data = np.asarray(data)
+        if data.ndim != 2 or data.dtype != np.uint8:
+            raise ValueError("Expected a 2D uint8 array of packed binary fingerprints")
+        if not data.shape[0] or not data.shape[1]:
+            raise ValueError("Packed input must have at least one row and one byte")
+        data = np.ascontiguousarray(data)
         n, fdim = data.shape
-        sort_vals = np.sum(data, axis=1)
+        sort_vals = row_popcounts(data).astype(np.int64, copy=False)
 
         # print(sort_vals)
 
         self.ind = np.argsort(sort_vals, kind='stable')
         self.unsort_ind = np.argsort(self.ind, kind='stable')
-        sort_vals = sort_vals[self.ind] 
+        sort_vals = sort_vals[self.ind]
         data = data[self.ind,:] # sort data
 
         # print(data)
@@ -62,7 +72,7 @@ class CLASSIX_T:
         search_time = 0.0
         loop_time = 0.0
         conversion_time = 0.0
-        
+
         st = time()
         lab = 0
 
@@ -83,21 +93,18 @@ class CLASSIX_T:
         self.group_sizes = [] # group sizes
         self.group_starting_pts = [] # group starting pts in the sorted array
 
-        datas = sparse.csr_matrix(data)
-        datas_data = datas.data
-        datas_indices = datas.indices
-        datas_indptr = datas.indptr
+        # Packed rows are used directly: no CSR construction is required.
         self.aggregation_dict = {}
-        
-        
+
+
         # Aggregation
         for i in tqdm(range(n)):
-            
+
             if self.labels[i] >= 0:
                 continue
-                
+
             clustc = data[i,:]
-            
+
             # What if we take the starting point as a slice of the sparse array instead?
             # clustc = datas[i,:]
             #
@@ -106,9 +113,9 @@ class CLASSIX_T:
             # num_group = 1
             self.splist.append(i)
             self.group_sizes.append(1)
-            
+
             search_radius = sort_vals[i]/(1-self.radius) # Only the right side limit is needed
-            
+
             st1 = time()
             last_j = np.searchsorted(sort_vals, search_radius, side='right')
             self.aggregation_dict[i] = last_j
@@ -118,25 +125,25 @@ class CLASSIX_T:
             st1 = time()
 
             # ips = data[i+1:last_j,:]@clustc.T
-            ips = spsubmatxvec(datas_data, datas_indptr, datas_indices, i+1, last_j, clustc)
+            ips = packed_submatxvec(data, i+1, last_j, clustc)
 
             ips_time += time() - st1
             # Let's make the product with rhsi times sort_vals the condition.
             # lhs = sort_vals[i+1:last_j]
-            
+
             nr_dist += last_j - i - 1
-            
+
             st_c = time()
 
             vec = ips/(sort_vals[i+1:last_j]+sort_vals[i])
             conversion_time += time() - st_c
-            
+
             st1 = time()
 
             """
             Create a custom C function that takes in a range of indices, a vector, and a scalar value.
             If the value of the vector at index i is greater than 0, it will check if the value is greater than the scalar value,
-            
+
             Maybe just try boolean masks first?
             Note: self.labels has size = n
                   vec has size = last_j - i - 1
@@ -148,7 +155,7 @@ class CLASSIX_T:
             ```
             vec_mask = vec >= rhsi
             assigned_mask = self.labels >= 0
-            
+
             ```
 
             """
@@ -170,11 +177,11 @@ class CLASSIX_T:
             #         # num_group += 1
             #         self.labels[j] = lab
             #         self.group_sizes[-1] += 1
-                            
+
             loop_time += time() - st1
 
             lab += 1
-            
+
         print("time for ips:", ips_time)
         print("time for search:", search_time)
         print("time for conversion:", conversion_time)
@@ -185,15 +192,12 @@ class CLASSIX_T:
         self.search_time = search_time
         self.ips_time = ips_time
         self.aggregation_time = time()-st
-        
+
         # merging
         st = time()
 
         self.spdata = data[self.splist,:]
-        spdatas = sparse.csr_matrix(self.spdata)
-        spdatas_data = spdatas.data
-        spdatas_indices = spdatas.indices
-        spdatas_indptr = spdatas.indptr
+        # Group representatives also remain packed.
         spdata_len = len(self.splist)
         self.group_centers = self.spdata
 
@@ -204,11 +208,11 @@ class CLASSIX_T:
         label_sp = self.labels[self.splist]
         scale = self.mergeScale
 
-        
-        
 
-        self.Adj = np.zeros((len(self.splist), len(self.splist)), dtype=np.int8)
-        
+
+
+        self.Adj = PackedAdjacency(len(self.splist))
+
         t1 = 0.0
         t2 = 0.0
         t3 = 0.0
@@ -218,14 +222,14 @@ class CLASSIX_T:
             if not self.mergeTinyGroups:
                 if self.group_sizes[i] < minPts:
                     continue
-                
+
             xi = self.spdata[i, :]
             search_radius = sort_vals_sp[i]/(1-self.mergeScale*self.radius)
 
             st1 = time()
             last_j = np.searchsorted(sort_vals_sp, search_radius, side='right')
             first_j = i
-            ips = spsubmatxvec(spdatas_data, spdatas_indptr, spdatas_indices, first_j, last_j, xi)
+            ips = packed_submatxvec(self.spdata, first_j, last_j, xi)
             # ips = np.matmul(self.spdata[first_j:last_j,:],xi.T)
             tanimoto_distance = 1 - ips/(sort_vals_sp[i] + sort_vals_sp[first_j:last_j] - ips)
             # tanimoto_distance = 1 - tanimoto_score
@@ -237,7 +241,7 @@ class CLASSIX_T:
             if not self.mergeTinyGroups:
                 inds = inds[0][self.group_sizes[inds[0]] >= minPts]
                 inds = i + inds
-            
+
             else:
                 inds = i + inds[0]
 
@@ -262,7 +266,7 @@ class CLASSIX_T:
 
         print("  merging time:", time()-st)
         self.merging_time = time()-st
-        
+
         # Cluster redistribution
         print(" minPts Merging")
         st = time()
@@ -289,9 +293,9 @@ class CLASSIX_T:
                 xi = self.spdata[iii, :]
                 # d = Tanimoto distances to all other group centers
                 # ips = np.matmul(self.spdata, xi.T)
-                ips = spsubmatxvec(spdatas_data, spdatas_indptr, spdatas_indices, 0, spdata_len, xi)
+                ips = packed_submatxvec(self.spdata, 0, spdata_len, xi)
                 d = 1 - ips/(sort_vals_sp[iii] + sort_vals_sp - ips)
-                
+
                 o = np.argsort(d, kind='stable')
                 # merge with the closest group that has more than minPts
                 for j in o:
@@ -314,7 +318,7 @@ class CLASSIX_T:
         # print("final cluster sizes", cs)
 
         print("  minPts merging time:", time()-st)
-        
+
         for idx, label in enumerate(self.labels):
             self.labels[idx] = label_sp[label]
 
@@ -364,7 +368,7 @@ class CLASSIX_T:
                                 print(f' -> {connected_path[k+1]}', end="")
 
                         return connected_path
-                    
+
                     else:
                         # If no connection path is found, print that there is no connection, there must be something wrong with the code
                         print(f"No connection path found between {ind1} and {ind2}, although they belong to different groups in the same cluster. Please check the program for bugs!")
@@ -378,24 +382,24 @@ class CLASSIX_T:
         # Convert start and goal from 1-based to 0-based indices
         start -= 1
         goal -= 1
-        
+
         # Initialize the queue with the start node and a path containing only the start node
         queue = deque([(start, [start])])
-        
+
         # Keep track of visited nodes to avoid cycles
         visited = set()
-        
+
         while queue:
             # Dequeue a node and the path that led to it
             current_node, path = queue.popleft()
-            
+
             # If the current node is the goal, return the path
             if current_node == goal:
                 return [node + 1 for node in path]  # Convert back to 1-based indices
-            
+
             # Mark the current node as visited
             visited.add(current_node)
-            
+
             # Enqueue all unvisited neighbors
             for neighbor, connected in enumerate(adj_matrix[current_node]):
                 if connected and neighbor not in visited:

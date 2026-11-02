@@ -13,7 +13,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build_native.ps1
 .\.venv\Scripts\python.exe -m jupyter lab
 ```
 
-Open the binary experiment notebooks using this environment. Each notebook contains its data preparation, clustering calls, scoring and plotting code. Run its cells from top to bottom. It writes results under `_generated/` and figures under `plots/`.
 
 | Notebook | Experiment |
 | --- | --- |
@@ -21,7 +20,7 @@ Open the binary experiment notebooks using this environment. Each notebook conta
 | [Greg Landrum](experiments/experiment_1/02_molecular_benchmarks.ipynb) | Five-method chemical fingerprint comparison |
 | [Radius sensitivity](experiments/experiment_1/03_radius_sensitivity.ipynb) | Synthetic ARI and AMI curves |
 | [Euclidean/Manhattan](experiments/experiment_2/01_euclidean_manhattan_comparison.ipynb) | Twenty original-feature datasets |
-| [Search-bound probabilities](experiments/classix_t_prob.ipynb) | Probability calculations and simulations |
+| [Search-bound probabilities](experiments/classix_t_prob.ipynb) | Probabilistic analysis via calculations and simulations |
 
 The numeric comparison uses the versions from its original runs. Open it in a separate environment:
 

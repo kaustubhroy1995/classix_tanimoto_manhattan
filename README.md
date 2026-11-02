@@ -48,6 +48,6 @@ model.fit(packed)
 labels = model.labels
 ```
 
-`src/classix_t.py` is the packed Tanimoto implementation. Its C operations and compact adjacency are in `src/spmv/`. Input must be contiguous packed `uint8` rows with zero padding bits. `src/classix_m.py` supplies Manhattan CLASSIX. Euclidean CLASSIX comes from the compiled `classixclustering` package.
+`src/classix_t.py` is the Tanimoto implementation. The custom-written sparse C vector-submatrix operations and compact adjacency are in `src/spmv/`. Input must be contiguous packed `uint8` rows with zero padding bits. `src/classix_m.py` supplies Manhattan CLASSIX. Euclidean CLASSIX comes from the compiled `classixclustering` package.
 
-The comparison notebooks import the pinned third-party BitBIRCH library from `vendor/bitbirch/`. It retains its upstream license. Project code uses the [MIT license](LICENSE).
+We use a local copy of the third-party BitBIRCH library from `vendor/bitbirch/`. It retains its upstream license. Project code uses the [MIT license](LICENSE).
